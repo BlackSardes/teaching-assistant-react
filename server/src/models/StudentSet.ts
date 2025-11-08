@@ -4,15 +4,14 @@ export class StudentSet {
   private students: Student[] = [];
 
   // Add a new student
-  addStudent(name: string, cpf: string, email: string): Student {
-    const cleanCPF = cpf.replace(/[.-]/g, '');
+  addStudent(student: Student): Student {
+    const cleanCPF = student.getCleanCPF();
     
     // Check if CPF already exists
     if (this.findStudentByCPF(cleanCPF)) {
       throw new Error('Student with this CPF already exists');
     }
 
-    const student = new Student(name, cpf, email);
     this.students.push(student);
     return student;
   }
@@ -31,7 +30,7 @@ export class StudentSet {
   }
 
   // Update student by CPF
-  updateStudent(cpf: string, updates: { name?: string; email?: string }): Student {
+  updateStudent(cpf: string, updatedStudent: Partial<Student>): Student {
     const cleanCPF = cpf.replace(/[.-]/g, '');
     const student = this.findStudentByCPF(cleanCPF);
     
@@ -39,11 +38,12 @@ export class StudentSet {
       throw new Error('Student not found');
     }
 
-    if (updates.name) student.name = updates.name;
-    if (updates.email) {
-      // Validate email before updating
-      new Student(student.name, student.cpf, updates.email);
-      student.email = updates.email;
+    // Update fields if provided
+    if (updatedStudent.name !== undefined) student.name = updatedStudent.name;
+    if (updatedStudent.email !== undefined) {
+      // Validate email before updating by creating a temporary Student
+      new Student(student.name, student.cpf, updatedStudent.email);
+      student.email = updatedStudent.email;
     }
 
     return student;

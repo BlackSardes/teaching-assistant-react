@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { StudentSet } from './models/StudentSet';
+import { Student } from './models/Student';
 
 const app = express();
 const PORT = 3005;
@@ -33,8 +34,9 @@ app.post('/api/students', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Name, CPF, and email are required' });
     }
 
-    const student = studentSet.addStudent(name, cpf, email);
-    res.status(201).json(student.toJSON());
+    const student = new Student(name, cpf, email);
+    const addedStudent = studentSet.addStudent(student);
+    res.status(201).json(addedStudent.toJSON());
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
   }
@@ -46,7 +48,12 @@ app.put('/api/students/:cpf', (req: Request, res: Response) => {
     const { cpf } = req.params;
     const { name, email } = req.body;
     
-    const student = studentSet.updateStudent(cpf, { name, email });
+    // Create a partial Student object for update
+    const updates: Partial<Student> = {};
+    if (name !== undefined) updates.name = name;
+    if (email !== undefined) updates.email = email;
+    
+    const student = studentSet.updateStudent(cpf, updates);
     res.json(student.toJSON());
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
