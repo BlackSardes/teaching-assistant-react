@@ -396,6 +396,45 @@ app.get('/api/classes/:classId/enrollments', (req: Request, res: Response) => {
   }
 });
 
+// PUT /api/classes/:classId/enrollments/:studentCPF/evaluation - Update evaluation for an enrolled student
+app.put('/api/classes/:classId/enrollments/:studentCPF/evaluation', (req: Request, res: Response) => {
+  try {
+    const { classId, studentCPF } = req.params;
+    const { goal, grade } = req.body;
+    
+    if (!goal) {
+      return res.status(400).json({ error: 'Goal is required' });
+    }
+
+    const classObj = classes.findClassById(classId);
+    if (!classObj) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+
+    const cleanedCPF = cleanCPF(studentCPF);
+    const enrollment = classObj.findEnrollmentByStudentCPF(cleanedCPF);
+    if (!enrollment) {
+      return res.status(404).json({ error: 'Student not enrolled in this class' });
+    }
+
+    if (grade === '' || grade === null || grade === undefined) {
+      // Remove evaluation
+      enrollment.removeEvaluation(goal);
+    } else {
+      // Add or update evaluation
+      if (!['MANA', 'MPA', 'MA'].includes(grade)) {
+        return res.status(400).json({ error: 'Invalid grade. Must be MANA, MPA, or MA' });
+      }
+      enrollment.addOrUpdateEvaluation(goal, grade);
+    }
+
+    triggerSave(); // Save to file after evaluation update
+    res.json(enrollment.toJSON());
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -1,0 +1,38 @@
+{
+  "students": [
+    {
+      "name": "Paulo Borba",
+      "cpf": "11111111111",
+      "email": "phmb@cin.ufpe.br"
+    },
+    {
+      "name": "Maria Modularidade",
+      "cpf": "22222222222",
+      "email": "mm@cin.ufpe.br"
+    }
+  ],
+  "classes": [
+    {
+      "topic": "Engenharia de Software e Sistemas",
+      "semester": 1,
+      "year": 2025,
+      "enrollments": [
+        {
+          "studentCPF": "11111111111",
+          "evaluations": []
+        }
+      ]
+    },
+    {
+      "topic": "Engenharia de Software e Sistemas",
+      "semester": 2,
+      "year": 2025,
+      "enrollments": [
+        {
+          "studentCPF": "22222222222",
+          "evaluations": []
+        }
+      ]
+    }
+  ]
+}

@@ -56,6 +56,28 @@ class EnrollmentService {
       throw error;
     }
   }
+
+  static async updateEvaluation(classId: string, studentCPF: string, goal: string, grade: string): Promise<Enrollment> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/enrollments/${studentCPF}/evaluation`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ goal, grade }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update evaluation');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error updating evaluation:', error);
+      throw error;
+    }
+  }
 }
 
 export default EnrollmentService;

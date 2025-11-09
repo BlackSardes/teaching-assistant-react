@@ -181,7 +181,9 @@ const App: React.FC = () => {
 
           {activeTab === 'evaluations' && (
             <Evaluations 
-              students={selectedClass ? selectedClass.enrollments.map(e => e.student) : []} 
+              selectedClass={selectedClass}
+              onClassesUpdate={loadClasses}
+              onError={handleError}
             />
           )}
 
