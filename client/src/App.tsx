@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Student } from './types/Student';
 import { Class } from './types/Class';
 import { studentService } from './services/StudentService';
@@ -20,13 +20,7 @@ const App: React.FC = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('students');
 
-  // Load students and classes on component mount
-  useEffect(() => {
-    loadStudents();
-    loadClasses();
-  }, []);
-
-  const loadStudents = async () => {
+  const loadStudents = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -38,18 +32,36 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadClasses = async () => {
+  const loadClasses = useCallback(async () => {
     try {
       setError('');
       const classesData = await ClassService.getAllClasses();
       setClasses(classesData);
+      
+      // Update selectedClass if it exists to reflect new enrollments
+      if (selectedClass) {
+        const updatedSelectedClass = classesData.find(c => 
+          c.topic === selectedClass.topic && 
+          c.year === selectedClass.year && 
+          c.semester === selectedClass.semester
+        );
+        if (updatedSelectedClass) {
+          setSelectedClass(updatedSelectedClass);
+        }
+      }
     } catch (err) {
       setError('Failed to load classes. Please try again.');
       console.error('Error loading classes:', err);
     }
-  };
+  }, [selectedClass]);
+
+  // Load students and classes on component mount
+  useEffect(() => {
+    loadStudents();
+    loadClasses();
+  }, [loadStudents, loadClasses]);
 
   const handleStudentAdded = () => {
     loadStudents(); // Reload the list when a new student is added
