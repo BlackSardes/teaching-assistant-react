@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Class } from '../types/Class';
 import ClassService from '../services/ClassService';
 import EnrollmentService from '../services/EnrollmentService';
+import { ImportComponent } from './Import';
 
 interface EvaluationsProps {
   onError: (errorMessage: string) => void;
@@ -142,6 +143,9 @@ const Evaluations: React.FC<EvaluationsProps> = ({ onError }) => {
 
       {selectedClass && selectedClass.enrollments.length > 0 && (
         <div className="evaluation-table-container">
+          <div id="upload-div">
+            <ImportComponent />
+          </div>
           <h4>{selectedClass.topic} ({selectedClass.year}/{selectedClass.semester})</h4>
           
           <div className="evaluation-matrix">
