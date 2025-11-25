@@ -5,7 +5,7 @@ interface AcademicStatusDetailModalProps {
   onClose: () => void;
   studentName: string;
   status: {
-    color: string;
+    color: "green" | "orange" | "red" | "invisible";
     label: string;
     reasons: string[];
   } | null;
@@ -24,6 +24,9 @@ const AcademicStatusDetailModal: React.FC<AcademicStatusDetailModalProps> = ({
     orange: "#d97706",
     red: "#dc2626"
   };
+
+  const backgroundColor =
+    status.color === "invisible" ? "#6b7280" : (colorMap[status.color] || "#6b7280");
 
   return (
     <div
@@ -46,8 +49,7 @@ const AcademicStatusDetailModal: React.FC<AcademicStatusDetailModalProps> = ({
           padding: "2rem",
           borderRadius: "12px",
           width: "90%",
-          maxWidth: "500px",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.15)"
+          maxWidth: "500px"
         }}
       >
         <h2 style={{ marginBottom: "1rem", textAlign: "center" }}>
@@ -56,7 +58,7 @@ const AcademicStatusDetailModal: React.FC<AcademicStatusDetailModalProps> = ({
 
         <div
           style={{
-            backgroundColor: colorMap[status.color],
+            backgroundColor,
             color: "white",
             padding: "0.5rem 1rem",
             borderRadius: "6px",
@@ -65,29 +67,27 @@ const AcademicStatusDetailModal: React.FC<AcademicStatusDetailModalProps> = ({
             fontWeight: 600
           }}
         >
-          {status.label}
+          {status.label || "Situação Indisponível"}
         </div>
 
-        <ul style={{ lineHeight: "1.6", marginBottom: "1.5rem" }}>
-          {status.reasons.map((reason, index) => (
-            <li key={index} style={{ marginBottom: "0.5rem" }}>
-              • {reason}
-            </li>
-          ))}
+        <ul>
+          {(status.reasons.length ? status.reasons : ["Sem dados disponíveis"]).map(
+            (reason, index) => (
+              <li key={index}>• {reason}</li>
+            )
+          )}
         </ul>
 
         <button
           onClick={onClose}
           style={{
+            marginTop: "1rem",
             width: "100%",
             padding: "0.75rem",
             borderRadius: "6px",
             backgroundColor: "#4f46e5",
             color: "white",
-            fontWeight: 600,
-            border: "none",
-            fontSize: "1rem",
-            cursor: "pointer"
+            border: "none"
           }}
         >
           Fechar

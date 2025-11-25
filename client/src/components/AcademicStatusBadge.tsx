@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 interface AcademicStatusResult {
-  color: 'green' | 'orange' | 'red';
+  color: "green" | "orange" | "red" | "invisible";
   label: string;
   reasons: string[];
 }
@@ -10,14 +10,15 @@ interface AcademicStatusBadgeProps {
   studentCPF: string;
   classId: string | null;
   onClick?: (status: AcademicStatusResult) => void;
+  onStatusLoaded?: (status: AcademicStatusResult) => void; 
 }
 
 const AcademicStatusBadge: React.FC<AcademicStatusBadgeProps> = ({
   studentCPF,
   classId,
-  onClick
+  onClick,
+  onStatusLoaded
 }) => {
-
   const [status, setStatus] = useState<AcademicStatusResult | null>(null);
 
   useEffect(() => {
@@ -28,54 +29,41 @@ const AcademicStatusBadge: React.FC<AcademicStatusBadgeProps> = ({
         const response = await fetch(
           `http://localhost:3005/api/academic-status/${classId}/${studentCPF}`
         );
+        if (!response.ok) throw new Error();
 
-        if (!response.ok) throw new Error("");
-
-        const data = await response.json();
+        const data: AcademicStatusResult = await response.json();
         setStatus(data);
+        onStatusLoaded?.(data);
+
       } catch {
-        // fallback inicial
-        setStatus({
-          color: "green",
-          label: "Situação OK",
-          reasons: ["Status inicial mockado"]
-        });
+        const fallback: AcademicStatusResult = {
+          color: "invisible",
+          label: "",
+          reasons: []
+        };
+        setStatus(fallback);
+        onStatusLoaded?.(fallback);
       }
     };
 
     fetchStatus();
-  }, [classId, studentCPF]);
+  }, [classId, studentCPF, onStatusLoaded]);
 
-  if (!classId) return null;
-  if (!status) return <span>...</span>;
-
-  const colorMap: any = {
-    green: { bg: "#dcfce7", text: "#166534", border: "#22c55e" },
-    orange: { bg: "#fef3c7", text: "#b45309", border: "#f59e0b" },
-    red: { bg: "#fee2e2", text: "#b91c1c", border: "#ef4444" }
-  };
-
-  const colors = colorMap[status.color];
+  if (!classId || !status) return <span>Carregando...</span>;
 
   return (
-    <div
-      title="Clique para ver detalhes"
+    <button
       style={{
-        backgroundColor: colors.bg,
-        color: colors.text,
         padding: "4px 10px",
-        borderRadius: "20px",
-        border: `2px solid ${colors.border}`,
-        fontWeight: 600,
-        fontSize: "0.8rem",
+        borderRadius: "6px",
+        border: "1px solid #ccc",
         cursor: "pointer",
-        transition: "0.2s",
-        display: "inline-block"
+        background: "#f3f4f6"
       }}
-      onClick={() => onClick && onClick(status)}
+      onClick={() => onClick?.(status)}
     >
-      {status.label}
-    </div>
+      Ver detalhes
+    </button>
   );
 };
 

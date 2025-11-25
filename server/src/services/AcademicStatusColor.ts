@@ -32,7 +32,7 @@ export function getActualPreviousFailuresCount(studentCpf: string, currentClassI
     throw new Error("Not implemented");
 }
 
-// Função principal
+// Função principal (apenas interface)
 export function getClassificacaoAcademica(studentCpf: string, classId: string){  
     // Determina a cor de status acadêmico (Verde, Laranja, Vermelho) e seus motivos
     throw new Error("Not implemented");

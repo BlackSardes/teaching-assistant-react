@@ -192,7 +192,9 @@ const App: React.FC = () => {
                 onEditStudent={handleEditClick}
                 onError={handleError}
                 loading={loading}
-                selectedClass={selectedClass} // 🔥 NECESSÁRIO PARA A SUA FEATURE
+
+                /** 🔥 AQUI ESTÁ A CORREÇÃO CRUCIAL */
+                selectedClass={selectedClass ? { id: `${selectedClass.topic}-${selectedClass.year}-${selectedClass.semester}` } : null}
               />
             </>
           )}
