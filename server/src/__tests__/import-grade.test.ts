@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app, studentSet, classes } from '../server';
 import { Student } from '../models/Student';
 import { Class } from '../models/Class';
+import { DEFAULT_ESPECIFICACAO_DO_CALCULO_DA_MEDIA } from '../models/EspecificacaoDoCalculoDaMedia';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -31,7 +32,7 @@ describe('Grade Import API - /api/classes/gradeImport/:classId', () => {
     });
 
     // Create test class
-    testClass = new Class('Engenharia de Software e Sistemas', 1, 2025);
+    testClass = new Class('Engenharia de Software e Sistemas', 1, 2025, DEFAULT_ESPECIFICACAO_DO_CALCULO_DA_MEDIA);
     classes.addClass(testClass);
 
     // Create and enroll test students with evaluations
@@ -94,20 +95,10 @@ describe('Grade Import API - /api/classes/gradeImport/:classId', () => {
         .post(`/api/classes/gradeImport/${classId}`)
         .attach('file', filePath);
 
-      // Note: Current backend implementation does not validate file type
-      // This test documents the expected behavior (should be 400)
-      // For now, we check that either it fails validation or processes incorrectly
-      
-      if (response.status === 400) {
-        // Expected behavior: backend validates file type
-        expect(response.body).toHaveProperty('error');
-        expect(response.body.error).toMatch(/invalid|arquivo|file type/i);
-      } else {
-        // Current behavior: backend attempts to process
-        // This is a known limitation that should be fixed
-        console.warn('WARNING: Backend does not validate file type for non-CSV/XLSX files');
-        // Test passes but logs warning for future implementation
-      }
+      // Backend now validates file type and should return 400
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toMatch(/inválido|arquivo|CSV|XLSX/i);
     });
   });
 

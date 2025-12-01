@@ -532,7 +532,16 @@ app.post('/api/classes/gradeImport/:classId', upload_dir.single('file'), async (
         // const fileP = req.file?.path ?? "";
         const fileP = (req as any).file?.path ?? "";
         if (fileP) {
-                // TODO: verificar o tipo de arquivo
+                // Validar tipo de arquivo
+                const file = (req as any).file;
+                const allowedMimeTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+                const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+                const fileExtension = file.originalname ? file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.')) : '';
+                
+                if (!allowedMimeTypes.includes(file.mimetype) && !allowedExtensions.includes(fileExtension)) {
+                        return res.status(400).json({ error: "Tipo de arquivo inválido. Apenas arquivos CSV ou XLSX são permitidos." });
+                }
+                
                 var sheet = new CSVReader(fileP);
                 const file_colums = await sheet.getColumns();
                 res.status(200).json({ session_string: fileP, file_columns: file_colums, mapping_colums: goals_field })
