@@ -1,36 +1,37 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
 import CustomFileInput from "./shared/InputFile/InputFile";
+
 const API_BASE_URL = 'http://localhost:3005';
 
-
 interface ImportGradeComponentProps {
-  classID: string,
-  toReset: () => Promise<void>
+  classID: string;
+  toReset: () => Promise<void>;
 }
 
-export const ImportGradeComponent: React.FC<ImportGradeComponentProps> = (
-  { classID = "", toReset }
-) => {
-  // Estado do passo atual
+export const ImportGradeComponent: React.FC<ImportGradeComponentProps> = ({ classID = "", toReset }) => {
+  // ========== Estado do componente ==========
+  
+  // Passo atual do fluxo (1 = upload, 2 = mapping)
   const [step, setStep] = useState<number>(1);
-
-  // Arquivo selecionado
+  
+  // Arquivo selecionado pelo usuário
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  // Nome do arquivo
-  // const [fileName, setFileName] = useState<string>("");
-
-  // Colunas detectadas
+  
+  // Colunas detectadas no arquivo pelo backend
   const [columns, setColumns] = useState<string[]>([]);
-
+  
+  // Campos esperados pela turma (goals + cpf)
   const [fields, setFields] = useState<string[]>([]);
-
-  // Mapeamento colunas → TARGET_FIELDS
+  
+  // Mapeamento: coluna do arquivo → campo esperado
   const [mapping, setMapping] = useState<{ [key: string]: string }>({});
-
+  
+  // Session string retornada pelo backend (path do arquivo temporário)
   const [session, setSession] = useState<string>("");
 
-  // sempre que classID mudar ele vai resetar tudo
+  // ========== Efeitos ==========
+  
+  // Reseta todo o estado quando classID mudar
   useEffect(() => {
     setStep(1);
     setSelectedFile(null);
@@ -39,224 +40,218 @@ export const ImportGradeComponent: React.FC<ImportGradeComponentProps> = (
     setMapping({});
     setSession("");
   }, [classID]);
-  // -----------------------------
-  // Funções a implementar
-  // -----------------------------
-
+  // ========== Handlers ==========
+  
+  /**
+   * Handler chamado quando o usuário seleciona um arquivo
+   */
   const onFileSelected = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
-    // if (file) setFileName(file.name);
-
   };
 
-  // Vai mandar para o back para ele processar e retorna as colunas e os nomes das metas para fazer o mapeamento
+  /**
+   * Envia o arquivo para o backend processar e retorna:
+   * - session_string: identificador da sessão (path temporário do arquivo)
+   * - file_columns: colunas detectadas no arquivo
+   * - mapping_colums: campos esperados pela turma (goals + cpf)
+   */
   const processFileInBack = async () => {
     if (!selectedFile) {
       alert("Erro na seleção de arquivo");
       return;
     }
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('fileName', selectedFile.name);
-      formData.append('fileType', selectedFile?.type);
 
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('fileName', selectedFile.name);
+    formData.append('fileType', selectedFile.type);
 
-      // TODO: tem de pegar o classesID do back quando selecionar no front
-      try {
-        const response = await fetch(API_BASE_URL + '/api/classes/gradeImport/' + classID, {
-          method: 'POST',
-          body: formData,
-        });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/classes/gradeImport/${classID}`, {
+        method: 'POST',
+        body: formData,
+      });
 
-        // console.log('Status Code:', response.status);
-        // console.log('Status Text:', response.statusText);
+      if (response.ok) {
+        const respJson = await response.json();
+        const sessionString: string = respJson.session_string;
+        const fileColumns: string[] = respJson.file_columns;
+        const mappingColumns: string[] = respJson.mapping_colums; // Note: typo no backend
 
-        if (response.status >= 200 && response.status < 300) {
-          // Status code de sucesso (2xx)
-          const resp_json = await response.json();
-          const session_: string = resp_json.session_string || null;
-          const file_columns: string[] = resp_json.file_columns || null;
-          // campos que o backend retornou, que devem ser relacionados para o arquivo
-          const mapping_colums: string[] = resp_json.mapping_colums || null;
-
-          if (session_ && file_columns && mapping_colums) {
-            // console.log("Deu certo");
-            setSession(session_ as string);
-            setColumns(file_columns as string[]);
-            setFields(mapping_colums as string[]);
-            setStep(2);
-          } else {
-            console.error('Dados incompletos na resposta:', {
-              session_string: session_,
-              file_columns: file_columns,
-              mapping_colums: mapping_colums
-            });
-            alert('Erro: Dados incompletos retornados pelo servidor');
-          }
+        if (sessionString && fileColumns && mappingColumns) {
+          setSession(sessionString);
+          setColumns(fileColumns);
+          setFields(mappingColumns);
+          setStep(2);
         } else {
-          // Status code de erro
-          console.error(`Erro HTTP: ${response.status} - ${response.statusText}`);
-
-          // Tentar obter mensagem de erro do corpo da resposta
-          try {
-            const errorBody = await response.json();
-            console.error('Detalhes do erro:', errorBody);
-            alert(`Erro ao processar arquivo: ${errorBody.error || response.statusText}`);
-          } catch {
-            console.error('Não foi possível ler o corpo da resposta de erro');
-            alert(`Erro ao processar arquivo: ${response.statusText}`);
-          }
+          console.error('Dados incompletos na resposta:', respJson);
+          alert('Erro: Dados incompletos retornados pelo servidor');
         }
-      } catch (error: any) {
-        console.error('Erro na requisição:', error);
-        alert(`Erro na requisição: ${error.message}`);
+      } else {
+        // Tratamento de erro HTTP
+        const errorBody = await response.json().catch(() => ({}));
+        const errorMessage = errorBody.error || response.statusText;
+        console.error(`Erro HTTP: ${response.status} - ${errorMessage}`);
+        alert(`Erro ao processar arquivo: ${errorMessage}`);
       }
-
+    } catch (error: any) {
+      console.error('Erro na requisição:', error);
+      alert(`Erro na requisição: ${error.message}`);
+    }
   };
 
+  /**
+   * Volta para o passo 1 (upload) e limpa o mapeamento
+   */
   const previousStep = () => {
     setMapping({});
     setStep(1);
   };
 
-  // Vai mandar para o back o mapeamento
+  /**
+   * Envia o mapeamento para o backend processar o arquivo completo
+   * Backend usa session_string para localizar o arquivo e mapping para interpretar as colunas
+   */
   const sendToBackendMapping = async () => {
-    // usando o session manda de volta para passar o mapping
-
+    // Remove entradas vazias do mapping
     const cleanedMapping = Object.fromEntries(
-        Object.entries(mapping).filter(([_, value]) => value !== '')
-      );
-    setMapping(cleanedMapping);
+      Object.entries(mapping).filter(([_, value]) => value !== '')
+    );
+
     try {
-      const f = {
+      const payload = {
         session_string: session,
         mapping: cleanedMapping,
       };
-      const response = await fetch(API_BASE_URL + '/api/classes/gradeImport/' + classID, {
+
+      const response = await fetch(`${API_BASE_URL}/api/classes/gradeImport/${classID}`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-          },
-        body: JSON.stringify(f)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
+
       console.log('Response status:', response.status);
-      console.log('Response status text:', response.statusText);
-      if(!response.ok){ 
+
+      if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = `Erro ao enviar o mapping: ${errorData.error || response.statusText}`;
         alert(errorMessage);
         throw new Error(errorMessage);
       }
-      // call loadclasses in evaluation component
+
+      // Atualiza os dados no componente pai após importação bem-sucedida
       await toReset();
-    } catch(error: any) {
-      console.error({ error: error });
+    } catch (error: any) {
+      console.error({ error });
       if (error.message && !error.message.includes('Erro ao enviar o mapping')) {
         alert(`Erro: ${error.message}`);
       }
     }
-
   };
 
-  // Atualiza o mapping quando o usuário seleciona um valor
+  /**
+   * Atualiza o mapeamento quando o usuário seleciona um valor no dropdown
+   */
   const updateMapping = (col: string, value: string) => {
     setMapping(prev => ({ ...prev, [col]: value }));
   };
 
-  // -----------------------------
-  // Render JSX
-  // -----------------------------
-  return (
+  // ========== Estilos ==========
+  
+  const buttonStyle: React.CSSProperties = {
+    background: "#078d64",
+    color: "white",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'",
+    fontSize: "14px",
+    fontWeight: "600",
+    padding: "10px 20px",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    margin: "3px"
+  };
 
+  const mappingGridStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "max-content 1fr",
+    rowGap: "8px",
+    columnGap: "8px",
+  };
+
+  // ========== Render ==========
+  
+  return (
     <div>
-      {/* Passo 1: Upload */}
+      {/* ========== PASSO 1: Upload do arquivo ========== */}
       {step === 1 && (
         <div>
           <h2>Importar de Planilha de Notas</h2>
-          <CustomFileInput backColor="#078d64" accept=".csv,.xlsl,.xls" onChange={onFileSelected} resetState={classID} />
+          <CustomFileInput 
+            backColor="#078d64" 
+            accept=".csv,.xlsx,.xls" 
+            onChange={onFileSelected} 
+            resetState={classID} 
+          />
           <button
             onClick={processFileInBack}
             disabled={!selectedFile}
-            style={{
-              background: "#078d64",
-              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'",
-              color: "white",
-              fontSize: "14px",
-              fontWeight: "600",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer"
-            }}
+            style={buttonStyle}
           >
             Continuar
           </button>
         </div>
       )}
-      {/*
-       TODO: Mandar para o back, ele vai processar as colunas do arquivo inicialmente e Depois
-       vai retornar as colunas da turma e as colunas do arquivo e salvar, ai na segunda parte, ele vai ler tudo isso e mandar para o back
-       uma segunda parte com o mapping e a ref ao arquivo nessa parte
-       TODO: Separar em 2 rotas no back ou 1, de ler as colunas e salvar o arquivo:
-       [Front] Upload → [Back] lê só o cabeçalho → retorna colunas
-       [Front] Mapeia colunas → [Back] faz parse completo (stream)
-       Para isso devo moficiar o comportamento da classe de spreadsheetreader, para ele ler pacialmente
-        */}
-      {/* Passo 2: Mapping */}
+
+      {/* ========== PASSO 2: Mapeamento de colunas ========== */}
+      {/* 
+        Fluxo implementado:
+        [Front] Upload → [Back] lê só o cabeçalho → retorna colunas
+        [Front] Mapeia colunas → [Back] faz parse completo e atualiza enrollments
+      */}
       {step === 2 && (
         <div>
           <h1>Mapeamento de colunas</h1>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "max-content 1fr",
-              rowGap: "8px",
-              columnGap: "8px",
-            }}
-          >
+          
+          <div style={mappingGridStyle}>
             <h2 style={{ margin: 0, gridColumn: "1" }}>Colunas do Arquivo</h2>
-            <h2 style={{ margin: 0, gridColumn: "2" }}>Campos Esperados pela turma</h2>
+            <h2 style={{ margin: 0, gridColumn: "2" }}>Campos Esperados pela Turma</h2>
+            
             {columns.map(col => (
-                // col -> colunas do aquivo
-                // opt -> colunas que queremos colocar
-                // mapping[col] = opt, para relacionar um col com opt
-                // Usando react fracgemt pois ele e o mesmo que <></>
-                <React.Fragment key={col}>
-                  <h4 style={{ margin: 0 }} key={`h4-${col}`}>
-                    {col}
-                  </h4>
-                  <select
-                    value={mapping[col] ?? ""}
-                    onChange={e => updateMapping(col, e.target.value)}
-                    key={`select-${col}`}
-                  >
-                    <option value="">--Selecione--</option>
-                    {fields.map(opt => {
-                      // Verifica se a opção já está sendo usada em outro select (exceto o atual)
-                      // isAlreadyUsed é verdadeiro o some tem alguma saida verdadeira, ele basicamente vai varrer
-                      // os mapeamentos e verificar se uma key diferente ja tem aquele opt
-                      //
-                      // As opcoes com selecione vao ser ignoradas pois so vai pegar oque ta definido
-                      const isAlreadyUsed = Object.entries(mapping).some(
-                        ([key, value]) => key !== col && value === opt
-                      );
-                      return (
-                        <option
-                          key={opt}
-                          value={opt}
-                          disabled={isAlreadyUsed}
-                        >
-                          {opt}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </React.Fragment>
+              // Para cada coluna do arquivo, renderiza uma linha com label + select
+              // Usando React.Fragment para não adicionar nó extra no DOM
+              <React.Fragment key={col}>
+                <h4 style={{ margin: 0 }}>{col}</h4>
+                <select
+                  value={mapping[col] ?? ""}
+                  onChange={e => updateMapping(col, e.target.value)}
+                >
+                  <option value="">--Selecione--</option>
+                  {fields.map(opt => {
+                    // Verifica se a opção já está sendo usada em outro select (exceto o atual)
+                    // para evitar mapeamentos duplicados
+                    const isAlreadyUsed = Object.entries(mapping).some(
+                      ([key, value]) => key !== col && value === opt
+                    );
+                    return (
+                      <option key={opt} value={opt} disabled={isAlreadyUsed}>
+                        {opt}
+                      </option>
+                    );
+                  })}
+                </select>
+              </React.Fragment>
             ))}
           </div>
-          <button style={{background: "#078d64", color: "white", margin: "3px"}} onClick={previousStep}>Voltar</button>
-          <button style={{background: "#078d64", color: "white", margin: "3px"}} onClick={sendToBackendMapping}>Enviar</button>
+
+          <div style={{ marginTop: "16px" }}>
+            <button style={buttonStyle} onClick={previousStep}>
+              Voltar
+            </button>
+            <button style={buttonStyle} onClick={sendToBackendMapping}>
+              Enviar
+            </button>
+          </div>
         </div>
       )}
     </div>
