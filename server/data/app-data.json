@@ -44,7 +44,7 @@
           "evaluations": [
             {
               "goal": "Requirements",
-              "grade": "MPA"
+              "grade": "MA"
             },
             {
               "goal": "Configuration Management",
@@ -52,7 +52,7 @@
             },
             {
               "goal": "Project Management",
-              "grade": "MANA"
+              "grade": "MA"
             },
             {
               "goal": "Design",
@@ -60,7 +60,7 @@
             },
             {
               "goal": "Tests",
-              "grade": "MPA"
+              "grade": "MA"
             },
             {
               "goal": "Refactoring",
@@ -85,11 +85,11 @@
             },
             {
               "goal": "Design",
-              "grade": "MA"
+              "grade": "MPA"
             },
             {
               "goal": "Refactoring",
-              "grade": "MA"
+              "grade": "MPA"
             },
             {
               "goal": "Tests",
@@ -106,10 +106,22 @@
             },
             {
               "goal": "Requirements",
-              "grade": "MA"
+              "grade": "MPA"
             },
             {
               "goal": "Project Management",
+              "grade": "MPA"
+            },
+            {
+              "goal": "Design",
+              "grade": "MPA"
+            },
+            {
+              "goal": "Tests",
+              "grade": "MPA"
+            },
+            {
+              "goal": "Refactoring",
               "grade": "MPA"
             }
           ]

@@ -9,7 +9,8 @@ import { Report } from './models/Report';
 import * as fs from 'fs';
 import * as path from 'path';
 import { EspecificacaoDoCalculoDaMedia, DEFAULT_ESPECIFICACAO_DO_CALCULO_DA_MEDIA } from './models/EspecificacaoDoCalculoDaMedia';
-
+import { getStudentStatusColor } from './models/StudentStatusColor';
+import { Grade } from './models/Evaluation';
 // usado para ler arquivos em POST
 const multer = require('multer');
 
@@ -516,6 +517,67 @@ app.get('/api/classes/:classId/report', (req: Request, res: Response) => {
   }
 });
 
+// GET /api/classes/:classId/students-status - Retorna cor do aluno com base na situacao academica
+app.get('/api/classes/:classId/students-status', (req: Request, res: Response) => {
+  try {
+    const { classId } = req.params;
+    const classObj = classes.findClassById(classId);
+    
+    if (!classObj) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+    
+    const enrollments = classObj.getEnrollments();
+    const spec = classObj.getEspecificacaoDoCalculoDaMedia();
+
+    //Calcular a média atual de cada aluno dinamicamente (enquanto n há feature)
+    const studentData = enrollments.map(enrollment => {
+      const evaluations = enrollment.getEvaluations();
+      
+      const notasDasMetas = new Map<string, Grade>();
+      evaluations.forEach(ev => {
+        notasDasMetas.set(ev.getGoal(), ev.getGrade());
+      });
+
+      const mediaAluno = spec.calc(notasDasMetas);
+
+      return {
+        enrollment,
+        mediaAluno
+      };
+    });
+
+    // Calcular a média da turma dinamicamente (enquanto n há feature)
+    const mediasValidas = studentData.map(d => d.mediaAluno);
+    const mediaTurma = mediasValidas.length > 0
+        ? mediasValidas.reduce((acc, curr) => acc + curr, 0) / mediasValidas.length
+        : 0;
+
+    const result = studentData.map(({ enrollment, mediaAluno }) => {
+      const student = enrollment.getStudent();
+      const temReprovacao = Boolean(enrollment.getReprovadoPorFalta());
+
+      const color = getStudentStatusColor(
+        mediaAluno,
+        mediaTurma,
+        temReprovacao
+      );
+
+      return {
+        student: student.toJSON(),
+        mediaAluno,
+        mediaTurma,
+        temReprovacaoAnterior: temReprovacao,
+        statusColor: color
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Erro Fatal ao calcular status:', error);
+    res.status(500).json({ error: 'Failed to calculate students status' });
+  }
+});
 
 // Export the app for testing
 export { app, studentSet, classes };
