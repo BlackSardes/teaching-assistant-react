@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { StudentSet } from './models/StudentSet';
 import { Student } from './models/Student';
-import { Evaluation, EVALUATION_GOALS } from './models/Evaluation';
+import { Evaluation, EVALUATION_GOALS, GENERAL_EVALUATION_GOALS, ROTEIRO_EVALUATION_GOALS } from './models/Evaluation';
 import { Classes } from './models/Classes';
 import { Class } from './models/Class';
 import { Report } from './models/Report';
@@ -55,9 +55,9 @@ const saveDataToFile = (): void => {
                                 enrollments: classObj.getEnrollments().map(enrollment => ({
                                         studentCPF: enrollment.getStudent().getCPF(),
                                         evaluations: enrollment.getEvaluations().map(evaluation => evaluation.toJSON()),
-                                  mediaPreFinal: enrollment.getMediaPreFinal(),
-                                  mediaPosFinal: enrollment.getMediaPosFinal(),
-                                  reprovadoPorFalta: enrollment.getReprovadoPorFalta()
+                                        mediaPreFinal: enrollment.getMediaPreFinal(),
+                                        mediaPosFinal: enrollment.getMediaPosFinal(),
+                                        reprovadoPorFalta: enrollment.getReprovadoPorFalta()
                                 }))
                         }))
                 };
@@ -474,29 +474,29 @@ app.put('/api/classes/:classId/enrollments/:studentCPF/evaluation', (req: Reques
                         return res.status(404).json({ error: 'Class not found' });
                 }
 
-              const cleanedCPF = cleanCPF(studentCPF);
-              const enrollment = classObj.findEnrollmentByStudentCPF(cleanedCPF);
-              if (!enrollment) {
-                      return res.status(404).json({ error: 'Student not enrolled in this class' });
-              }
-
-              if (grade === '' || grade === null || grade === undefined) {
-                // Remove evaluation
-                enrollment.removeEvaluation(goal);
-              } else {
-                // Add or update evaluation
-                if (!['MANA', 'MPA', 'MA'].includes(grade)) {
-                  return res.status(400).json({ error: 'Invalid grade. Must be MANA, MPA, or MA' });
+                const cleanedCPF = cleanCPF(studentCPF);
+                const enrollment = classObj.findEnrollmentByStudentCPF(cleanedCPF);
+                if (!enrollment) {
+                        return res.status(404).json({ error: 'Student not enrolled in this class' });
                 }
-                enrollment.addOrUpdateEvaluation(goal, grade);
-              }
-              // Recalculate media values after evaluation change so they are sent to the client
-              try {
-                enrollment.calculateMediaPreFinal();
-                // enrollment.calculateMediaPosFinal();
-              } catch (err) {
-                // ignore errors during recalculation
-              }
+
+                if (grade === '' || grade === null || grade === undefined) {
+                        // Remove evaluation
+                        enrollment.removeEvaluation(goal);
+                } else {
+                        // Add or update evaluation
+                        if (!['MANA', 'MPA', 'MA'].includes(grade)) {
+                                return res.status(400).json({ error: 'Invalid grade. Must be MANA, MPA, or MA' });
+                        }
+                        enrollment.addOrUpdateEvaluation(goal, grade);
+                }
+                // Recalculate media values after evaluation change so they are sent to the client
+                try {
+                        enrollment.calculateMediaPreFinal();
+                        // enrollment.calculateMediaPosFinal();
+                } catch (err) {
+                        // ignore errors during recalculation
+                }
 
 
                 triggerSave(); // Save to file after evaluation update
@@ -512,29 +512,42 @@ app.put('/api/classes/:classId/enrollments/:studentCPF/evaluation', (req: Reques
 // 2) Front maps file columns to class goals and sends `session_string` + `mapping` -> backend parses
 //    the whole file and updates enrollments accordingly.
 app.post('/api/classes/gradeImport/:classId', upload_dir.single('file'), async (req: express.Request, res: express.Response) => {
-  const classId = req.params.classId;
-  const classObj = classes.findClassById(classId);
-  if (!classObj) return res.status(404).json({ error: 'Class not Found' });
+        const classId = req.params.classId;
+        const classObj = classes.findClassById(classId);
+        if (!classObj) return res.status(404).json({ error: 'Class not Found' });
 
-  const enrollments = classObj.getEnrollments();
-  if (!enrollments) return res.status(404).json({ error: 'Enrollments not found' });
+        const enrollments = classObj.getEnrollments();
+        if (!enrollments) return res.status(404).json({ error: 'Enrollments not found' });
 
-  const goals_field = ['cpf', ...Array.from(EVALUATION_GOALS)];
+        // Determine which goals to use based on evaluationType query parameter
+        const evaluationType = req.query.evaluationType as string;
+        let selectedGoals: string[];
 
-  // STEP 1: if a file was uploaded, return its columns so frontend can map them to goals
-  // - `session_string` is the temp path (multer destination) used as an identifier
-  const uploaded = (req as any).file;
-  // If file uploaded => return session + file columns for mapping
-  if (uploaded?.path) {
-        // validate file type for csv and excel
-    const allowedMimeTypes = [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
-    const allowedExtensions = ['.csv', '.xlsx', '.xls'];
-    const original = uploaded.originalname || '';
-    const ext = path.extname(original).toLowerCase();
+        if (evaluationType === 'general') {
+                selectedGoals = [...GENERAL_EVALUATION_GOALS];
+        } else if (evaluationType === 'roteiros') {
+                selectedGoals = [...ROTEIRO_EVALUATION_GOALS];
+        } else {
+                // Default to all goals if not specified
+                selectedGoals = [...EVALUATION_GOALS];
+        }
+
+        const goals_field = ['cpf', ...Array.from(selectedGoals)];
+
+        // STEP 1: if a file was uploaded, return its columns so frontend can map them to goals
+        // - `session_string` is the temp path (multer destination) used as an identifier
+        const uploaded = (req as any).file;
+        // If file uploaded => return session + file columns for mapping
+        if (uploaded?.path) {
+                // validate file type for csv and excel
+                const allowedMimeTypes = [
+                        'text/csv',
+                        'application/vnd.ms-excel',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ];
+                const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+                const original = uploaded.originalname || '';
+                const ext = path.extname(original).toLowerCase();
 
                 // validate file type by mimetype OR extension
                 if (!allowedMimeTypes.includes(uploaded.mimetype) && !allowedExtensions.includes(ext)) {
@@ -549,7 +562,7 @@ app.post('/api/classes/gradeImport/:classId', upload_dir.single('file'), async (
                 uploadSessions.set(uploaded.path, { ext, original });
                 // return the temp path (session_string) + header columns and expected mapping fields
                 return res.status(200).json({ session_string: uploaded.path, file_columns, mapping_colums: goals_field });
-  }
+        }
 
         // STEP 2: mapping + processing
         // Expect JSON body: { session_string: string, mapping: { fileColumnName -> goalName } }

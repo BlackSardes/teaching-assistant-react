@@ -53,6 +53,30 @@
             {
               "goal": "Project Management",
               "grade": "MANA"
+            },
+            {
+              "goal": "Roteiro 1",
+              "grade": "MA"
+            },
+            {
+              "goal": "Roteiro 2",
+              "grade": "MPA"
+            },
+            {
+              "goal": "Roteiro 3",
+              "grade": "MA"
+            },
+            {
+              "goal": "Roteiro 4",
+              "grade": "MANA"
+            },
+            {
+              "goal": "Roteiro 5",
+              "grade": "MA"
+            },
+            {
+              "goal": "Roteiro 6",
+              "grade": "MPA"
             }
           ],
           "mediaPreFinal": null,
@@ -73,6 +97,30 @@
             {
               "goal": "Project Management",
               "grade": "MPA"
+            },
+            {
+              "goal": "Roteiro 1",
+              "grade": "MANA"
+            },
+            {
+              "goal": "Roteiro 2",
+              "grade": "MANA"
+            },
+            {
+              "goal": "Roteiro 3",
+              "grade": "MANA"
+            },
+            {
+              "goal": "Roteiro 4",
+              "grade": "MANA"
+            },
+            {
+              "goal": "Roteiro 5",
+              "grade": "MANA"
+            },
+            {
+              "goal": "Roteiro 6",
+              "grade": "MANA"
             }
           ],
           "mediaPreFinal": null,
@@ -84,6 +132,38 @@
           "evaluations": [
             {
               "goal": "Requirements",
+              "grade": "MA"
+            },
+            {
+              "goal": "Roteiro 1",
+              "grade": "MPA"
+            },
+            {
+              "goal": "Roteiro 2",
+              "grade": "MA"
+            },
+            {
+              "goal": "Roteiro 3",
+              "grade": "MPA"
+            },
+            {
+              "goal": "Roteiro 4",
+              "grade": "MA"
+            },
+            {
+              "goal": "Roteiro 5",
+              "grade": "MPA"
+            },
+            {
+              "goal": "Roteiro 6",
+              "grade": "MA"
+            },
+            {
+              "goal": "Configuration Management",
+              "grade": "MA"
+            },
+            {
+              "goal": "Project Management",
               "grade": "MA"
             }
           ],

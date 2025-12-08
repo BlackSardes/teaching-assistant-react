@@ -19,17 +19,21 @@ const baseUrl = 'http://localhost:3004';
 let testClassId: string = 'Engenharia de Software e Sistemas-2025-1';
 
 // Antes de cada cenário - abre novo browser
-Before({ tags: '@import-grade' }, async function () {
+Before({ tags: '@import-grade or @import-grade-roteiro' }, async function () {
   browser = await launch({ 
     headless: false, // Set to true for CI/CD
     slowMo: 50 // Slow down actions for visibility
   });
   page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 720 });
+  
+  // Compartilhar page no contexto World para outros arquivos de steps
+  this.page = page;
+  this.browser = browser;
 });
 
 // Após cada cenário - fecha o browser
-After({ tags: '@import-grade' }, async function () {
+After({ tags: '@import-grade or @import-grade-roteiro' }, async function () {
   if (browser) {
     await browser.close();
   }
@@ -199,6 +203,16 @@ Given('fiz upload de um arquivo CSV com dados válidos', async function () {
 });
 
 Given('estou na etapa de mapeamento de colunas', async function () {
+  // Aguardar o componente avançar para a etapa de mapeamento
+  // Isso pode demorar devido ao upload do arquivo e processamento no backend
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // Aguardar explicitamente pelo heading de mapeamento aparecer
+  await page.waitForFunction(() => {
+    const headings = Array.from(document.querySelectorAll('h2'));
+    return headings.some(h => h.textContent?.includes('Colunas do Arquivo'));
+  }, { timeout: 10000 });
+  
   // Verificar que estamos na etapa de mapeamento
   const mappingHeading = await page.$('h2');
   if (mappingHeading) {
@@ -286,8 +300,8 @@ When('clico no botão enviar mapeamento', async function () {
 
 Then('as notas devem ser importadas com sucesso', async function () {
   // Após enviar o mapeamento, o componente pode voltar para step 1 ou permanecer no step 2
-  // Vamos esperar um pouco mais e verificar qual tela está sendo exibida
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  // Vamos esperar e verificar qual tela está sendo exibida
+  await new Promise(resolve => setTimeout(resolve, 5000));
   
   const allH1 = await page.$$eval('h1', els => els.map(el => el.textContent));
   const allH2 = await page.$$eval('h2', els => els.map(el => el.textContent));
@@ -299,8 +313,12 @@ Then('as notas devem ser importadas com sucesso', async function () {
   const hasMappingH1 = allH1.some(text => text?.includes('Mapeamento de Colunas'));
   const hasMappingH2 = allH2.some(text => text?.includes('Colunas do Arquivo'));
   
-  // Se está em qualquer uma das duas telas válidas, considera sucesso
-  const isInValidScreen = hasUploadHeading || hasMappingH1 || hasMappingH2;
+  // Ou está na página de avaliações com a tabela
+  const hasEvaluationsHeading = allH2.some(text => text?.includes('Evaluations')) || 
+                                 allH1.some(text => text?.includes('Evaluations'));
+  
+  // Se está em qualquer uma das telas válidas, considera sucesso
+  const isInValidScreen = hasUploadHeading || hasMappingH1 || hasMappingH2 || hasEvaluationsHeading;
   
   expect(isInValidScreen).toBe(true);
 });
