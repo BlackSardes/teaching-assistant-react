@@ -40,7 +40,6 @@ const StudentList: React.FC<StudentListProps> = ({
       return 'transparent';
     }
 
-    // Normalizar CPF removendo pontos, traços e espaços
     const normalizedCpf = cpf.replace(/[.\-\s]/g, '');
     
     const status = studentsStatus.find(s => {

@@ -2,7 +2,7 @@
 Feature: Student status color
   Validate the colored border that indicates student status on the Students List
 
-  Scenario: Validar cores Verde (Aprovado) e Vermelho (Reprovado por nota atual)
+  Scenario: Validar cores Verde e Vermelho
     Given que o sistema possui a turma "Engenharia de Software e Sistemas-2025-2"
     And os seguintes alunos estão matriculados nesta turma:
       | nome               | cpf            | email             |
@@ -19,8 +19,7 @@ Feature: Student status color
     And vejo se cor de da borda de "Maria Modularidade" está "Vermelho"
     And vejo se cor de da borda de "João Elegância" está "Verde"
 
-  Scenario: Validar cor Amarela (Aluno levemente abaixo da média da turma)
-    # Usando turma 2026 para isolamento matemático
+  Scenario: Validar cor Amarela 
     Given que o sistema possui a turma "Engenharia de Software e Sistemas-2026-1"
     And os seguintes alunos estão matriculados nesta turma:
       | nome           | cpf            | email             |
@@ -38,8 +37,7 @@ Feature: Student status color
     And vejo se cor de da borda de "Ana Quase" está "Amarelo"
     And vejo se cor de da borda de "Pedro Perfeito" está "Verde"
 
-  Scenario: Validar cor Vermelha por Reprovação Anterior (Histórico)
-    # Usando turma 2027 para isolamento histórico
+  Scenario: Validar cor Vermelha por Reprovação Anterior 
     Given que o sistema possui a turma "Engenharia de Software e Sistemas-2027-1"
     And que houve uma turma passada "Engenharia de Software e Sistemas-2026-2"
     And o aluno "Roberto Recorrente" (CPF "777.777.777-77") foi reprovado nessa turma passada
